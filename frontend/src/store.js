@@ -1,37 +1,41 @@
-import {
-  legacy_createStore as createStore,
-  combineReducers,
-  applyMiddleware,
-} from "redux";
-import thunk from "redux-thunk";
-import { composeWithDevTools } from "redux-devtools-extension";
-import {
-  productListReducer,
-  productDetailsReducer,
-  productDeleteReducer,
-  productCreateReducer,
-  productUpdateReducer,
-  productReviewCreateReducer,
-  productTopRatedReducer,
-} from "./reducers/productReducers.js";
-import { cartReducer } from "./reducers/cartReducers.js";
-import {
-  userLoginReducer,
-  userRegisterReducer,
-  userDetailsReducer,
-  userUpdateProfileReducer,
-  userListReducer,
-  userDeleteReducer,
-  userUpdateReducer,
-} from "./reducers/userReducers.js";
+import { applyMiddleware, combineReducers, legacy_createStore as createStore } from 'redux';
+import { composeWithDevTools } from 'redux-devtools-extension';
+import thunk from 'redux-thunk';
+
+import { cartReducer } from './reducers/cartReducers.js';
 import {
   orderCreateReducer,
-  orderDetailsReducer,
-  orderPayReducer,
   orderDeliverReducer,
+  orderDetailsReducer,
   orderListMyReducer,
   orderListReducer,
-} from "./reducers/orderReducers.js";
+  orderPayReducer,
+} from './reducers/orderReducers.js';
+import {
+  productCreateReducer,
+  productDeleteReducer,
+  productDetailsReducer,
+  productListReducer,
+  productReviewCreateReducer,
+  productTopRatedReducer,
+  productUpdateReducer,
+} from './reducers/productReducers.js';
+import {
+  customerAnalyticsReducer,
+  financialSummaryReducer,
+  orderAnalyticsReducer,
+  productAnalyticsReducer,
+  salesAnalyticsReducer,
+} from './reducers/reportReducers.js';
+import {
+  userDeleteReducer,
+  userDetailsReducer,
+  userListReducer,
+  userLoginReducer,
+  userRegisterReducer,
+  userUpdateProfileReducer,
+  userUpdateReducer,
+} from './reducers/userReducers.js';
 
 const reducer = combineReducers({
   productList: productListReducer,
@@ -55,18 +59,24 @@ const reducer = combineReducers({
   orderDeliver: orderDeliverReducer,
   orderListMy: orderListMyReducer,
   orderList: orderListReducer,
+  // Enhanced Report Reducers
+  salesAnalytics: salesAnalyticsReducer,
+  productAnalytics: productAnalyticsReducer,
+  customerAnalytics: customerAnalyticsReducer,
+  orderAnalytics: orderAnalyticsReducer,
+  financialSummary: financialSummaryReducer,
 });
 
-const cartItemsFromStorage = localStorage.getItem("cartItems")
-  ? JSON.parse(localStorage.getItem("cartItems"))
+const cartItemsFromStorage = localStorage.getItem('cartItems')
+  ? JSON.parse(localStorage.getItem('cartItems'))
   : [];
 
-const userInfoFromStorage = localStorage.getItem("userInfo")
-  ? JSON.parse(localStorage.getItem("userInfo"))
+const userInfoFromStorage = localStorage.getItem('userInfo')
+  ? JSON.parse(localStorage.getItem('userInfo'))
   : null;
 
-const shippingAddressFromStorage = localStorage.getItem("shippingAddress")
-  ? JSON.parse(localStorage.getItem("shippingAddress"))
+const shippingAddressFromStorage = localStorage.getItem('shippingAddress')
+  ? JSON.parse(localStorage.getItem('shippingAddress'))
   : {};
 
 const initialState = {

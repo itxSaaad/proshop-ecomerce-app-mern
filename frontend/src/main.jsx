@@ -1,15 +1,15 @@
-import React from "react";
-import ReactDOM from "react-dom/client";
-import { Provider } from "react-redux";
-import store from "./store";
-import "./bootstrap.min.css";
-import "./index.css";
-import axios from "axios";
-import App from "./App";
+import axios from 'axios';
+import ReactDOM from 'react-dom/client';
+import { Provider } from 'react-redux';
 
-axios.defaults.baseURL = "https://proshop-ecomerce-app-mern.vercel.app";
+import App from './App';
+import './bootstrap.min.css';
+import './index.css';
+import store from './store';
 
-ReactDOM.createRoot(document.getElementById("root")).render(
+axios.defaults.baseURL = 'https://proshop-ecomerce-app-mern.vercel.app';
+
+ReactDOM.createRoot(document.getElementById('root')).render(
   <Provider store={store}>
     <App />
   </Provider>
