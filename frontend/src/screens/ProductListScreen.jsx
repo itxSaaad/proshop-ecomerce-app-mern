@@ -1,34 +1,27 @@
-import React, { useEffect } from "react";
-import { LinkContainer } from "react-router-bootstrap";
-import { Table, Button, Row, Col } from "react-bootstrap";
-import { useNavigate, useParams } from "react-router-dom";
-import { useDispatch, useSelector } from "react-redux";
+import React, { useEffect } from 'react';
+import { LinkContainer } from 'react-router-bootstrap';
+import { Table, Button, Row, Col } from 'react-bootstrap';
+import { useNavigate, useParams } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
 
-import {
-  listProducts,
-  deleteProduct,
-  createProduct,
-} from "../actions/productActions.js";
-import { PRODUCT_CREATE_RESET } from "../constants/productConstants.js";
+import { listProducts, deleteProduct, createProduct } from '../actions/productActions.js';
+import { PRODUCT_CREATE_RESET } from '../constants/productConstants.js';
 
-import Message from "../components/Message";
-import Loader from "../components/Loader";
-import Paginate from "../components/Paginate";
+import Message from '../components/Message';
+import Loader from '../components/Loader';
+import Paginate from '../components/Paginate';
 
 const ProductListScreen = () => {
   const dispatch = useDispatch();
   const history = useNavigate();
-  const pageNumber = useParams() || 1;
+  const { pageNumber } = useParams();
+  const currentPage = pageNumber || 1;
 
   const productList = useSelector((state) => state.productList);
   const { loading, error, products, page, pages } = productList;
 
   const productDelete = useSelector((state) => state.productDelete);
-  const {
-    loading: loadingDelete,
-    error: errorDelete,
-    success: successDelete,
-  } = productDelete;
+  const { loading: loadingDelete, error: errorDelete, success: successDelete } = productDelete;
 
   const productCreate = useSelector((state) => state.productCreate);
   const {
@@ -44,30 +37,22 @@ const ProductListScreen = () => {
   useEffect(() => {
     dispatch({ type: PRODUCT_CREATE_RESET });
     if (!userInfo || !userInfo.isAdmin) {
-      history("/login");
+      history('/login');
     }
     if (successCreate) {
       history(`/admin/product/${createdProduct._id}/edit`);
     } else {
-      dispatch(listProducts("", pageNumber));
+      dispatch(listProducts('', currentPage));
     }
-  }, [
-    dispatch,
-    history,
-    successDelete,
-    successCreate,
-    createdProduct,
-    userInfo,
-    pageNumber,
-  ]);
+  }, [dispatch, history, successDelete, successCreate, createdProduct, userInfo, currentPage]);
 
   const createProductHandler = () => {
-    if (window.confirm("Are You Sure?")) {
+    if (window.confirm('Are You Sure?')) {
       dispatch(createProduct());
     }
   };
   const deleteProductsHandler = (id) => {
-    if (window.confirm("Are You Sure?")) {
+    if (window.confirm('Are You Sure?')) {
       dispatch(deleteProduct(id));
     }
   };
