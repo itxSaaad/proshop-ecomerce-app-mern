@@ -5,11 +5,18 @@ const notFound = (req, res, next) => {
 };
 
 const errorHandler = (err, req, res, next) => {
-  const statusCode = res.statusCode === 200 ? 500 : res.statusCode;
+  // If response status is still 200 but there's an error, set it to 500
+  let statusCode = res.statusCode;
+  if (statusCode === 200) statusCode = 500;
+
   res.status(statusCode);
+
   res.json({
-    message: err.message,
-    stack: process.env.NODE_ENV === "production" ? null : err.stack,
+    success: false,
+    message: err.message || 'Server Error',
+    stack: process.env.NODE_ENV === 'production' ? undefined : err.stack,
+    // Include error code if available
+    code: err.code || 'UNKNOWN_ERROR',
   });
 };
 
