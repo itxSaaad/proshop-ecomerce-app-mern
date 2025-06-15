@@ -1,12 +1,18 @@
-import React, { useEffect } from "react";
-import { useNavigate, Link } from "react-router-dom";
-import { Button, Row, Col, ListGroup, Image, Card } from "react-bootstrap";
-import { useDispatch, useSelector } from "react-redux";
+import { useEffect } from 'react';
+import { Button, Card, Col, Image, ListGroup, Row } from 'react-bootstrap';
+import { useDispatch, useSelector } from 'react-redux';
+import { Link, useNavigate } from 'react-router-dom';
 
-import CheckoutSteps from "../components/CheckoutSteps";
-import Message from "../components/Message";
+import CheckoutSteps from '../components/CheckoutSteps';
+import Message from '../components/Message';
+import Loader from '../components/Loader';
 
-import { createOrder } from "../actions/orderActions.js";
+import {
+  createOrder,
+  createOrderAndPayWithStripe,
+  resetOrderCreate,
+  resetStripeCheckout,
+} from '../actions/orderActions.js';
 
 const PlaceOrderScreen = () => {
   const dispatch = useDispatch();
@@ -32,26 +38,54 @@ const PlaceOrderScreen = () => {
   const orderCreate = useSelector((state) => state.orderCreate);
   const { order, success, error } = orderCreate;
 
+  const orderStripeCheckout = useSelector((state) => state.orderStripeCheckout);
+  const { loading: stripeLoading, error: stripeError } = orderStripeCheckout;
+
   useEffect(() => {
-    if (success) {
+    if (success && cart.paymentMethod === 'COD') {
+      // For COD orders, redirect to order page immediately
       history(`/order/${order._id}`);
+      dispatch(resetOrderCreate());
     }
     // eslint-disable-next-line
-  }, [history, success]);
+  }, [history, success, cart.paymentMethod]);
+
+  // Reset any previous Stripe checkout state when component mounts
+  useEffect(() => {
+    dispatch(resetStripeCheckout());
+    dispatch(resetOrderCreate());
+  }, [dispatch]);
 
   const placeOrderHandler = () => {
-    dispatch(
-      createOrder({
-        orderItems: cart.cartItems,
-        shippingAddress: cart.shippingAddress,
-        paymentMethod: cart.paymentMethod,
-        itemsPrice: cart.itemsPrice,
-        shippingPrice: cart.shippingPrice,
-        taxPrice: cart.taxPrice,
-        totalPrice: cart.totalPrice,
-      })
-    );
+    if (cart.paymentMethod === 'Stripe') {
+      // For Stripe, create order and redirect to Stripe checkout
+      dispatch(
+        createOrderAndPayWithStripe({
+          orderItems: cart.cartItems,
+          shippingAddress: cart.shippingAddress,
+          paymentMethod: cart.paymentMethod,
+          itemsPrice: cart.itemsPrice,
+          shippingPrice: cart.shippingPrice,
+          taxPrice: cart.taxPrice,
+          totalPrice: cart.totalPrice,
+        })
+      );
+    } else {
+      // For COD, just create order
+      dispatch(
+        createOrder({
+          orderItems: cart.cartItems,
+          shippingAddress: cart.shippingAddress,
+          paymentMethod: cart.paymentMethod,
+          itemsPrice: cart.itemsPrice,
+          shippingPrice: cart.shippingPrice,
+          taxPrice: cart.taxPrice,
+          totalPrice: cart.totalPrice,
+        })
+      );
+    }
   };
+
   return (
     <>
       <CheckoutSteps step1 step2 step3 step4 />
@@ -62,9 +96,8 @@ const PlaceOrderScreen = () => {
               <h2>Shipping</h2>
               <p>
                 <strong>Address: </strong>
-                {cart.shippingAddress.address}, {cart.shippingAddress.city},{" "}
-                {cart.shippingAddress.postalCode},{" "}
-                {cart.shippingAddress.country}
+                {cart.shippingAddress.address}, {cart.shippingAddress.city},{' '}
+                {cart.shippingAddress.postalCode}, {cart.shippingAddress.country}
               </p>
             </ListGroup.Item>
 
@@ -86,18 +119,11 @@ const PlaceOrderScreen = () => {
                     <ListGroup.Item key={index}>
                       <Row>
                         <Col md={1}>
-                          <Image
-                            src={item.image}
-                            alt={item.name}
-                            fluid
-                            rounded
-                          />
+                          <Image src={item.image} alt={item.name} fluid rounded />
                         </Col>
 
                         <Col>
-                          <Link to={`/product/${item.product}`}>
-                            {item.name}
-                          </Link>
+                          <Link to={`/product/${item.product}`}>{item.name}</Link>
                         </Col>
 
                         <Col md={4}>
@@ -142,19 +168,45 @@ const PlaceOrderScreen = () => {
                   <Col>${cart.totalPrice}</Col>
                 </Row>
               </ListGroup.Item>
+
+              {(error || stripeError) && (
+                <ListGroup.Item>
+                  <Message variant="danger">{error || stripeError}</Message>
+                </ListGroup.Item>
+              )}
+
               <ListGroup.Item>
-                {error && <Message variant="danger">{error}</Message>}
+                {stripeLoading ? (
+                  <div className="d-flex align-items-center">
+                    <Loader />
+                    <span className="ms-2">Redirecting to payment...</span>
+                  </div>
+                ) : (
+                  <Button
+                    type="button"
+                    className="btn-block"
+                    disabled={cart.cartItems.length === 0}
+                    onClick={placeOrderHandler}
+                    style={{
+                      backgroundColor: cart.paymentMethod === 'Stripe' ? '#635bff' : undefined,
+                      borderColor: cart.paymentMethod === 'Stripe' ? '#635bff' : undefined,
+                    }}
+                  >
+                    {cart.paymentMethod === 'Stripe'
+                      ? 'Place Order & Pay with Stripe'
+                      : 'Place Order'}
+                  </Button>
+                )}
               </ListGroup.Item>
-              <ListGroup.Item>
-                <Button
-                  type="button"
-                  className="btn-block"
-                  disabled={cart.cartItems === 0}
-                  onClick={placeOrderHandler}
-                >
-                  Place Order
-                </Button>
-              </ListGroup.Item>
+
+              {cart.paymentMethod === 'Stripe' && (
+                <ListGroup.Item>
+                  <div className="d-flex align-items-center text-muted">
+                    <i className="fas fa-lock me-2"></i>
+                    <small>Secure payment powered by Stripe</small>
+                  </div>
+                </ListGroup.Item>
+              )}
             </ListGroup>
           </Card>
         </Col>

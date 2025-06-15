@@ -1,11 +1,12 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { Form, Button, Col } from "react-bootstrap";
-import { useDispatch, useSelector } from "react-redux";
+import { useState } from 'react';
+import { Button, Col, Form } from 'react-bootstrap';
+import { useDispatch, useSelector } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 
-import FormContainer from "../components/FormContainer";
-import CheckoutSteps from "../components/CheckoutSteps";
-import { savePaymentMethod } from "../actions/cartActions.js";
+import { savePaymentMethod } from '../actions/cartActions.js';
+
+import CheckoutSteps from '../components/CheckoutSteps';
+import FormContainer from '../components/FormContainer';
 
 const PaymentScreen = () => {
   const history = useNavigate();
@@ -15,16 +16,15 @@ const PaymentScreen = () => {
   const { shippingAddress } = cart;
 
   if (!shippingAddress) {
-    history("/shipping");
+    history('/shipping');
   }
 
-  const [paymentMethod, setPaymentMethod] = useState("PayPal");
+  const [paymentMethod, setPaymentMethod] = useState('Stripe');
 
   const submitHandler = (e) => {
-    e.preventDefault(); //Dispatch Save Shipping Address
+    e.preventDefault();
     dispatch(savePaymentMethod(paymentMethod));
-
-    history("/placeorder");
+    history('/placeorder');
   };
 
   return (
@@ -38,11 +38,21 @@ const PaymentScreen = () => {
           <Col>
             <Form.Check
               type="radio"
-              label="PayPal or Credit Card"
-              id="PayPal"
+              label="Stripe (Credit/Debit Card)"
+              id="Stripe"
               name="paymentMethod"
-              value="Paypal"
-              checked
+              value="Stripe"
+              checked={paymentMethod === 'Stripe'}
+              onChange={(e) => setPaymentMethod(e.target.value)}
+            ></Form.Check>
+
+            <Form.Check
+              type="radio"
+              label="Cash on Delivery"
+              id="COD"
+              name="paymentMethod"
+              value="COD"
+              checked={paymentMethod === 'COD'}
               onChange={(e) => setPaymentMethod(e.target.value)}
             ></Form.Check>
           </Col>
