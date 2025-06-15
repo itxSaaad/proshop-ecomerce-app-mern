@@ -1,19 +1,11 @@
-import React, { useEffect } from "react";
-import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
-import { useDispatch, useSelector } from "react-redux";
-import {
-  Row,
-  Col,
-  ListGroup,
-  Image,
-  Form,
-  Button,
-  Card,
-} from "react-bootstrap";
+import React, { useEffect } from 'react';
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
+import { Row, Col, ListGroup, Image, Form, Button, Card } from 'react-bootstrap';
 
-import Message from "../components/Message";
+import Message from '../components/Message';
 
-import { addToCart, removeFromCart } from "../actions/cartActions";
+import { addToCart, removeFromCart } from '../actions/cartActions';
 
 const CartScreen = () => {
   const { id } = useParams();
@@ -22,7 +14,7 @@ const CartScreen = () => {
   const history = useNavigate();
   const location = useLocation();
 
-  const qty = location.search ? Number(location.search.split("=")[1]) : 1;
+  const qty = location.search ? Number(location.search.split('=')[1]) : 1;
 
   const cart = useSelector((state) => state.cart);
   const { cartItems } = cart;
@@ -42,9 +34,9 @@ const CartScreen = () => {
 
   const checkoutHandler = () => {
     if (!userInfo) {
-      history("/login");
+      history('/login');
     } else {
-      history("/shipping");
+      history('/shipping');
     }
   };
 
@@ -72,11 +64,7 @@ const CartScreen = () => {
                     <Form.Control
                       as="select"
                       value={item.qty}
-                      onChange={(e) =>
-                        dispatch(
-                          addToCart(item.product, Number(e.target.value))
-                        )
-                      }
+                      onChange={(e) => dispatch(addToCart(item.product, Number(e.target.value)))}
                     >
                       {[...Array(item.countInStock).keys()].map((x) => (
                         <option key={x + 1} value={x + 1}>
@@ -104,14 +92,8 @@ const CartScreen = () => {
         <Card>
           <ListGroup variant="flush">
             <ListGroup.Item>
-              <h2>
-                Subtotal ({cartItems.reduce((acc, item) => acc + item.qty, 0)})
-                items
-              </h2>
-              $
-              {cartItems
-                .reduce((acc, item) => acc + item.qty * item.price, 0)
-                .toFixed(2)}
+              <h2>Subtotal ({cartItems.reduce((acc, item) => acc + item.qty, 0)}) items</h2>$
+              {cartItems.reduce((acc, item) => acc + item.qty * item.price, 0).toFixed(2)}
             </ListGroup.Item>
             <ListGroup.Item>
               <Button
