@@ -1,14 +1,14 @@
-import React, { useEffect } from 'react';
-import { LinkContainer } from 'react-router-bootstrap';
-import { Table, Button, Row, Col } from 'react-bootstrap';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useEffect } from 'react';
+import { Button, Col, Row, Table } from 'react-bootstrap';
 import { useDispatch, useSelector } from 'react-redux';
+import { LinkContainer } from 'react-router-bootstrap';
+import { useNavigate, useParams } from 'react-router-dom';
 
-import { listProducts, deleteProduct, createProduct } from '../actions/productActions.js';
+import { createProduct, deleteProduct, listProducts } from '../actions/productActions.js';
 import { PRODUCT_CREATE_RESET } from '../constants/productConstants.js';
 
-import Message from '../components/Message';
 import Loader from '../components/Loader';
+import Message from '../components/Message';
 import Paginate from '../components/Paginate';
 
 const ProductListScreen = () => {
@@ -42,7 +42,7 @@ const ProductListScreen = () => {
     if (successCreate) {
       history(`/admin/product/${createdProduct._id}/edit`);
     } else {
-      dispatch(listProducts('', currentPage));
+      dispatch(listProducts({ keyword: '', pageNumber: currentPage }));
     }
   }, [dispatch, history, successDelete, successCreate, createdProduct, userInfo, currentPage]);
 
