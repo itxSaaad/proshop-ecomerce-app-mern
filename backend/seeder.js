@@ -394,11 +394,11 @@ const generateProduct = (adminUserId, createdDate) => {
   // Generate realistic price
   const price = parseFloat(faker.commerce.price({ min: minPrice, max: maxPrice }));
 
-  // Generate stock levels (weighted toward reasonable stock)
+  // Generate stock levels (weighted toward reasonable stock, ensuring minimum stock for most products)
   const stockLevels = [0, 1, 2, 3, 5, 8, 12, 15, 20, 25, 30, 45, 60, 80, 100];
   const stockWeights = [
-    0.02, 0.03, 0.05, 0.08, 0.12, 0.15, 0.18, 0.15, 0.12, 0.08, 0.05, 0.03, 0.02, 0.01, 0.01,
-  ];
+    0.05, 0.05, 0.08, 0.12, 0.15, 0.18, 0.15, 0.12, 0.08, 0.05, 0.03, 0.02, 0.01, 0.005, 0.005,
+  ]; // Reduced zero stock probability
   const countInStock = getWeightedRandom(stockLevels, stockWeights);
 
   // Generate image URL using Lorem Picsum (placeholder service)
@@ -431,21 +431,50 @@ const importData = async () => {
 
     console.log('👥 Creating users with Faker...'.cyan);
 
-    // Create admin user
-    const adminUser = {
-      name: 'Admin User',
-      email: 'admin@example.com',
-      password: bcrypt.hashSync('123456', 10),
-      isAdmin: true,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
+    const testUsers = [
+      {
+        name: 'Admin User',
+        email: 'admin@example.com',
+        password: bcrypt.hashSync('123456', 10),
+        isAdmin: true,
+      },
+      {
+        name: 'John Doe',
+        email: 'john@example.com',
+        password: bcrypt.hashSync('123456', 10),
+        isAdmin: false,
+      },
+      {
+        name: 'Jane Doe',
+        email: 'jane@example.com',
+        password: bcrypt.hashSync('123456', 10),
+        isAdmin: false,
+      },
+      {
+        name: 'Sarah Wilson',
+        email: 'sarah@example.com',
+        password: bcrypt.hashSync('123456', 10),
+        isAdmin: false,
+      },
+      {
+        name: 'Mike Johnson',
+        email: 'mike@example.com',
+        password: bcrypt.hashSync('123456', 10),
+        isAdmin: false,
+      },
+      {
+        name: 'Emily Davis',
+        email: 'emily@example.com',
+        password: bcrypt.hashSync('123456', 10),
+        isAdmin: false,
+      },
+    ];
 
     // Generate realistic users over the past 8 months
     const eightMonthsAgo = new Date();
     eightMonthsAgo.setMonth(eightMonthsAgo.getMonth() - 8);
 
-    const users = [adminUser];
+    const users = [...testUsers];
 
     // Generate 60-80 realistic users
     const numberOfUsers = faker.number.int({ min: 60, max: 80 });
@@ -490,9 +519,9 @@ const importData = async () => {
 
     console.log('🛍️ Creating orders with realistic patterns...'.cyan);
 
-    // Payment methods with realistic distribution
-    const paymentMethods = ['PayPal', 'Stripe', 'Credit Card', 'Apple Pay', 'Google Pay'];
-    const paymentWeights = [0.35, 0.25, 0.2, 0.12, 0.08];
+    // Payment methods with realistic distribution (FIXED: "Strip" -> "Stripe")
+    const paymentMethods = ['Stripe', 'COD'];
+    const paymentWeights = [0.85, 0.15];
 
     // Countries for shipping
     const countries = [
@@ -514,10 +543,21 @@ const importData = async () => {
     const orders = [];
     const customerUsers = createdUsers.filter((user) => !user.isAdmin);
 
+    // Create a working copy of products with current stock levels
+    const productInventory = new Map();
+    createdProducts.forEach((product) => {
+      productInventory.set(product._id.toString(), {
+        ...product.toObject(),
+        currentStock: product.countInStock,
+      });
+    });
+
     // Create 300-500 orders with realistic patterns
     const numberOfOrders = faker.number.int({ min: 300, max: 500 });
+    let ordersCreated = 0;
+    let ordersSkipped = 0;
 
-    for (let i = 0; i < numberOfOrders; i++) {
+    for (let i = 0; i < numberOfOrders && ordersCreated < numberOfOrders; i++) {
       // Random customer (some customers order multiple times)
       const customer = getWeightedRandom(
         customerUsers,
@@ -591,16 +631,31 @@ const importData = async () => {
       let itemsTotal = 0;
 
       for (let j = 0; j < numItems; j++) {
-        // Filter products by seasonal preferences and stock
-        const availableProducts = createdProducts.filter(
-          (p) => p.countInStock > 0 && Math.random() < (productCategoryWeights[p.category] || 0.1)
+        // Filter products by seasonal preferences and CURRENT stock (FIXED)
+        const availableProducts = Array.from(productInventory.values()).filter(
+          (p) => p.currentStock > 0 && Math.random() < (productCategoryWeights[p.category] || 0.1)
         );
 
-        if (availableProducts.length === 0) continue;
+        if (availableProducts.length === 0) {
+          console.log(
+            `⚠️  No available products for category preferences, skipping order item ${j + 1}`
+              .yellow
+          );
+          break;
+        }
 
         const selectedProduct = faker.helpers.arrayElement(availableProducts);
-        const maxQty = Math.min(selectedProduct.countInStock, 4);
+        const maxQty = Math.min(selectedProduct.currentStock, 4);
         const quantity = faker.number.int({ min: 1, max: maxQty });
+
+        // Check if we have enough stock (ADDITIONAL SAFETY CHECK)
+        if (selectedProduct.currentStock < quantity) {
+          console.log(
+            `⚠️  Not enough stock for ${selectedProduct.name}. Available: ${selectedProduct.currentStock}, Requested: ${quantity}`
+              .yellow
+          );
+          continue;
+        }
 
         orderItems.push({
           name: selectedProduct.name,
@@ -612,13 +667,37 @@ const importData = async () => {
 
         itemsTotal += selectedProduct.price * quantity;
 
-        // Update product stock
+        // Update BOTH database and local inventory (FIXED)
         await Product.findByIdAndUpdate(selectedProduct._id, {
           $inc: { countInStock: -quantity },
         });
+
+        // Update local inventory tracker
+        const productInInventory = productInventory.get(selectedProduct._id.toString());
+        productInInventory.currentStock -= quantity;
+
+        console.log(
+          `📦 ${selectedProduct.name}: Sold ${quantity}, Remaining stock: ${productInInventory.currentStock}`
+            .green
+        );
+
+        // Remove from inventory if stock reaches 0
+        if (productInInventory.currentStock <= 0) {
+          productInventory.delete(selectedProduct._id.toString());
+          console.log(
+            `🚫 ${selectedProduct.name}: Out of stock, removed from available products`.red
+          );
+        }
       }
 
-      if (orderItems.length === 0) continue;
+      // Skip order if no items could be added (FIXED)
+      if (orderItems.length === 0) {
+        console.log(
+          `⚠️  Skipping order ${i + 1} - no items could be added due to stock constraints`.yellow
+        );
+        ordersSkipped++;
+        continue;
+      }
 
       // Calculate pricing
       const taxRate = faker.number.float({ min: 0.06, max: 0.12, precision: 0.01 }); // 6-12% tax
@@ -680,10 +759,20 @@ const importData = async () => {
       };
 
       orders.push(order);
+      ordersCreated++;
     }
 
     const createdOrders = await Order.insertMany(orders);
     console.log(`✅ Created ${createdOrders.length} orders`.green);
+    console.log(`⚠️  Skipped ${ordersSkipped} orders due to stock constraints`.yellow);
+
+    // Calculate and log final inventory status
+    const totalProductsWithStock = Array.from(productInventory.values()).length;
+    const totalProductsOutOfStock = createdProducts.length - totalProductsWithStock;
+    console.log(
+      `📊 Final Inventory: ${totalProductsWithStock} products with stock, ${totalProductsOutOfStock} out of stock`
+        .cyan
+    );
 
     console.log('⭐ Creating product reviews...'.cyan);
 
@@ -763,7 +852,7 @@ const importData = async () => {
       `📦 Products: ${createdProducts.length} across ${categories.length} categories`.white
     );
     console.log(`🏢 Brands: ${brands.length} different brands`.white);
-    console.log(`🛍️ Orders: ${createdOrders.length}`.white);
+    console.log(`🛍️ Orders: ${createdOrders.length} (${ordersSkipped} skipped due to stock)`.white);
     console.log(`⭐ Reviews: ${totalReviews}`.white);
     console.log(
       `💰 Total Revenue: $${totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2 })}`
@@ -778,6 +867,7 @@ const importData = async () => {
     console.log('\n🎉 Faker-Generated Data Imported Successfully!'.green.inverse);
     console.log('🚀 Ready to test your Enhanced Reports Dashboard!'.blue.bold);
     console.log('👉 Login as admin@example.com / 123456'.blue);
+    console.log('✅ No orders created for out-of-stock products!'.green.bold);
 
     process.exit();
   } catch (error) {
@@ -808,7 +898,6 @@ const importDataWithProgress = async () => {
   console.log('🚀 Starting Complete Faker-Based Data Generation...'.blue.bold);
   console.log('📈 This will create realistic e-commerce data using Faker.js'.blue);
   console.log('🖼️  Using Lorem Picsum for product images (no local images needed)'.blue);
-  console.log('⏱️  Estimated time: 3-5 minutes for complete dataset\n'.blue);
 
   await importData();
 };
