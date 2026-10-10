@@ -34,6 +34,10 @@ app.use(express.urlencoded({ extended: true }));
 
 app.use(cors());
 
+app.get(['/api', '/api/health'], (req, res) => {
+  res.status(200).json({ service: 'proshop-api', status: 'ok' });
+});
+
 // Logging
 if (NODE_ENV === 'development') {
   app.use(morgan('dev'));

@@ -1,5 +1,21 @@
 # ProShop Ecommerce MERN APP
 
+## Architecture
+
+```mermaid
+flowchart LR
+  Customer[Customer] -->|browse products, cart, checkout, view orders| React[React storefront UI\nVercel project: proshop-ecomerce-app-mern]
+  AdminUser[Administrator] -->|manage products and orders| React
+  React -->|HTTP API requests| Express[Express and Node.js API\nrepo-root Vercel project]
+  Express --> Controllers[Routes and controllers]
+  Controllers --> Mongo[(MongoDB)]
+  Mongo --> Controllers
+  Controllers --> Express
+  Express --> React
+  React -->|product, cart, order, and admin result| Customer
+  React -->|management result| AdminUser
+```
+
 > This is an eCommerce web application created with MongoDb, Express, React & Node Stack. It has user authentication system, an admin user who can add new products in the app, check for order and payments and also choose which order has been delivered from the store. It is also connected to PayPal for payments but later i Removed the Paypal Button due to its conflict with latest React Version. It is deployed in Vercel and below you can find the link to visit the app.
 
 ## Live Preview Project
@@ -125,3 +141,7 @@ Feel free to check the issues page.
 Give ⭐️ if you like this project!
 
 <a href="https://www.buymeacoffee.com/itxSaaad"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" width="200" /></a>
+
+## Vercel Deployment
+Vite storefront frontend/ + Express API backend/server.js. Set Vercel framework to Services. The root config sends /api paths to Express and other paths to the SPA. Configure MongoDB/JWT/Stripe in Vercel.
+See the repository-root [vercel.json](./vercel.json) for build roots and routing. Configure private values in Vercel Project Settings; never commit secrets.

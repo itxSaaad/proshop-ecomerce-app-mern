@@ -1,19 +1,40 @@
 {
-  "version": 2,
-  "builds": [
-    {
-      "src": "./backend/server.js",
-      "use": "@vercel/node"
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "services": {
+    "frontend": {
+      "rewrites": [
+        {
+          "source": "/(.*)",
+          "destination": "/index.html"
+        }
+      ],
+      "root": "frontend",
+      "framework": "vite"
     },
-    {
-      "src": "./frontend/dist",
-      "use": "@vercel/static"
+    "backend": {
+      "root": "backend",
+      "entrypoint": "server.js",
+      "framework": "express"
     }
-  ],
+  },
   "rewrites": [
     {
+      "source": "/api/(.*)",
+      "destination": {
+        "service": "backend"
+      }
+    },
+    {
+      "source": "/api",
+      "destination": {
+        "service": "backend"
+      }
+    },
+    {
       "source": "/(.*)",
-      "destination": "/backend/server.js"
+      "destination": {
+        "service": "frontend"
+      }
     }
   ]
 }
